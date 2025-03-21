@@ -6,22 +6,39 @@ import 'package:go_router_example/core/cubits/counter_cubit.dart';
 import 'package:go_router_example/core/models/micro_app_model.dart';
 import 'package:go_router_example/core/router/app_models_codec.dart';
 import 'package:go_router_example/core/router/route_constants.dart';
+import 'package:go_router_example/core/router/route_observers.dart';
 import 'package:go_router_example/screens/auth_screen.dart';
 import 'package:go_router_example/screens/counter_screen.dart';
 import 'package:go_router_example/screens/earn_main_screen.dart';
 import 'package:go_router_example/screens/home_screen.dart';
+import 'package:go_router_example/screens/maintenance_screen.dart';
 import 'package:go_router_example/screens/micro_app_screen.dart';
 import 'package:go_router_example/screens/not_found_screen.dart';
 import 'package:go_router_example/screens/smart_main_screen.dart';
+import 'package:go_router_example/screens/smart_screen.dart';
+import 'package:go_router_example/screens/vehicle_details_screen.dart';
+import 'package:go_router_example/screens/vehicle_list_screen.dart';
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'root');
 final _earnNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'earn_main');
+final _smartTabNavigatorKey =
+    GlobalKey<NavigatorState>(debugLabel: 'smart_tab');
+final _vehicleTabNavigatorKey =
+    GlobalKey<NavigatorState>(debugLabel: 'vehicle_tab');
+final _maintenanceTabNavigatorKey =
+    GlobalKey<NavigatorState>(debugLabel: 'maintenance_tab');
+
+// StatefulShellBranch will added.
 
 final GoRouter router = GoRouter(
   initialLocation: RouteConstants.route.home,
   navigatorKey: _rootNavigatorKey,
   debugLogDiagnostics: true,
   extraCodec: const AppModelsCodec(),
+  observers: [
+    RouteObserverManager.routeObserver,
+    NavigationLogger(),
+  ],
   routes: [
     GoRoute(
       path: RouteConstants.path.splash,
@@ -153,29 +170,44 @@ final GoRouter router = GoRouter(
             ),
           ],
         ),
-        ShellRoute(
-          parentNavigatorKey: _rootNavigatorKey,
-          builder: (_, __, Widget child) => SmartMainScreen(child: child),
-          routes: [
-            GoRoute(
-              path: RouteConstants.path.smart,
-              builder: (_, __) => const SmartScreen(),
-            ),
-            GoRoute(
-              path: RouteConstants.path.vehicleList,
-              builder: (_, __) => const VehicleListScreen(),
+        StatefulShellRoute.indexedStack(
+          builder: (_, __, StatefulNavigationShell navigationShell) =>
+              SmartMainScreen(shell: navigationShell),
+          branches: [
+            StatefulShellBranch(
+              navigatorKey: _smartTabNavigatorKey,
               routes: [
                 GoRoute(
-                  path: RouteConstants.path.vehicleDetails,
-                  builder: (_, GoRouterState state) => VehicleDetailsScreen(
-                    id: state.pathParameters['id'] as String,
-                  ),
+                  path: RouteConstants.path.smart,
+                  builder: (_, __) => const SmartScreen(),
                 ),
               ],
             ),
-            GoRoute(
-              path: RouteConstants.path.maintenance,
-              builder: (_, __) => const MaintenanceScreen(),
+            StatefulShellBranch(
+              navigatorKey: _vehicleTabNavigatorKey,
+              routes: [
+                GoRoute(
+                  path: RouteConstants.path.vehicleList,
+                  builder: (_, __) => const VehicleListScreen(),
+                  routes: [
+                    GoRoute(
+                      path: RouteConstants.path.vehicleDetails,
+                      builder: (_, GoRouterState state) => VehicleDetailsScreen(
+                        id: state.pathParameters['id'] ?? '',
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+            StatefulShellBranch(
+              navigatorKey: _maintenanceTabNavigatorKey,
+              routes: [
+                GoRoute(
+                  path: RouteConstants.path.maintenance,
+                  builder: (_, __) => const MaintenanceScreen(),
+                ),
+              ],
             ),
           ],
         ),
